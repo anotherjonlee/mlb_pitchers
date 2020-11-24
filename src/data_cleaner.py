@@ -71,33 +71,34 @@ class pitchers(object):
             self.engine.dispose()
 
 if __name__ == '__main__':
-    query = """
-    SELECT
-        p.*,
-        people.throws
-    FROM
-        pitching p
-        JOIN people ON people.playerID = p.playerID
-        ORDER BY
-            p.yearID,
-            p.playerID
-    """
     mlb = pitchers()
+    
+    query = """
+        SELECT
+            p.*,
+            people.throws
+        FROM
+            pitching p
+            JOIN people ON people.playerID = p.playerID
+            ORDER BY
+                p.yearID,
+                p.playerID
+    """
     mlb.statistical_analysis(query,'performances','n')
 
     query = """
-    SELECT
-        s.salary,
-        p.*,
-        people.throws
-    FROM
-        pitching p
-        JOIN people ON people.playerID = p.playerID
-        JOIN salaries s ON p.playerID = s.playerID
-            AND p.yearID = s.yearID
-            AND p.teamID = s.teamID
-        ORDER BY
-            p.yearID,
-            p.playerID
+        SELECT
+            s.salary,
+            p.*,
+            people.throws
+        FROM
+            pitching p
+            JOIN people ON people.playerID = p.playerID
+            JOIN salaries s ON p.playerID = s.playerID
+                AND p.yearID = s.yearID
+                AND p.teamID = s.teamID
+            ORDER BY
+                p.yearID,
+                p.playerID
     """
     mlb.sagemaker(query,'salaries','y')
