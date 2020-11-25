@@ -5,6 +5,7 @@ import numpy as np
 import creds
 from pathlib import Path
 from sklearn.model_selection import train_test_split
+from os import system
 
 class pitchers(object):
     def __init__(self):
@@ -14,15 +15,15 @@ class pitchers(object):
         self.user = 'root'
         self.query = None
         self.file_name = None
+        self.sql_path = '../data/lahman-mysql-dump.sql'
         self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.pw}@{self.host}/{self.database}',pool_recycle=3600)
         self.connection = self.engine.connect()
         self.connection_status = None
+        self.command = """mysql -u %s -p %s --host 'localhost' --port 3306 < %s""" %(self.user, self.pw, self.sql_path)
+        system(self.command)
+        print('SQL database has been created.')
 
     def statistical_analysis(self, query, file_name, connection_status):
-
-        # engine = create_engine(f'mysql+pymysql://{self.user}:{self.pw}@{self.host}/{self.database}',pool_recycle=3600)
-        # connection = engine.connect()
-
         d = Path().resolve().parent
         print('Current path is: ', d)
         file_path = str(d) + '/data/' + file_name + '.csv'
@@ -39,8 +40,6 @@ class pitchers(object):
             self.engine.dispose()
 
     def sagemaker(self, query, file_name, connection_status):
-        # engine = create_engine(f'mysql+pymysql://{self.user}:{self.pw}@{self.host}/{self.database}',pool_recycle=3600)
-        # connection = engine.connect()
         np.random.seed(10)
         d = Path().resolve().parent
         print('path is: ', d)
@@ -74,15 +73,45 @@ if __name__ == '__main__':
     mlb = pitchers()
     
     query = """
+        WITH lg_averages (yearID, lgID, lg_era, lg_hr, lg_bb, lg_hbp, lg_so, lg_ip) AS (
+            SELECT
+                yearID,
+                lgID,
+                AVG(ERA),
+                AVG(HR),
+                AVG(BB),
+                AVG(HBP),
+                AVG(SO),
+                ROUND(AVG((IPouts/3)),2)
+            FROM 
+                pitching
+            GROUP BY 
+                1,2
+        )
         SELECT
             p.*,
-            people.throws
-        FROM
-            pitching p
-            JOIN people ON people.playerID = p.playerID
-            ORDER BY
-                p.yearID,
-                p.playerID
+            ROUND(whip,2) whip,
+            ROUND(fip,2) fip
+        FROM 
+            pitching p 
+        JOIN 
+            salaries s ON s.playerID = p.playerID AND s.yearID = p.yearID AND s.teamID = p.teamID
+        JOIN 
+            lg_averages l ON p.lgID = l.lgID AND p.yearID  = l.yearID,
+        LATERAL (
+            SELECT (p.BB + p.H) / (p.IPouts / 3)
+        ) a(whip),
+        LATERAL(
+            SELECT (13 * p.HR + 3 * (p.BB + p.HBP) - (2 * p.SO)) / (p.IPouts / 3)
+        ) b(fip_less),
+        LATERAL(
+            SELECT
+                lg_era - ((13 * lg_hr) + (3 * (lg_bb + lg_hbp)) - (2 * lg_so)) / lg_ip
+        ) d(fip_constant),
+        LATERAL (
+            SELECT fip_less + fip_constant
+        ) e(fip)
+        ORDER BY p.yearID 
     """
     mlb.statistical_analysis(query,'performances','n')
 

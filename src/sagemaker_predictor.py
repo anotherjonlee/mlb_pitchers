@@ -1,5 +1,5 @@
 import os
-os.system("exec data_cleaner.py") # Executes the data_cleaner.py to prepare dataframes
+# os.system("exec data_cleaner.py") # Executes the data_cleaner.py to prepare dataframes
 import pandas as pd
 import sagemaker
 import boto3
@@ -20,13 +20,13 @@ class sm_predictor(object):
         self.region = boto3.Session().region_name
         self.container = image_uris.retrieve('linear-learner', self.region)
         self.prefix = 'mlb-salary-prediction'
-
+        
     def data_prep(self):
         d = Path().resolve().parent
         print('Current path is: ', d)
 
-        training_data_path = self.sess.upload_data(path= d + '/data/training_dataset.csv', key_prefix=self.prefix + '/input/training')
-        validation_data_path = self.sess.upload_data(path= d + '/data/validation_dataset.csv', key_prefix=self.prefix + '/input/validation')
+        training_data_path = self.sess.upload_data(path= str(d) + '/data/training_dataset.csv', key_prefix=self.prefix + '/input/training')
+        validation_data_path = self.sess.upload_data(path= str(d) + '/data/validation_dataset.csv', key_prefix=self.prefix + '/input/validation')
         
         print('S3 path for training dataset:',training_data_path)
         print('S3 path for validation dataset:',validation_data_path)
