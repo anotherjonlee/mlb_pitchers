@@ -16,12 +16,12 @@ class pitchers(object):
         self.query = None
         self.file_name = None
         self.sql_path = '../data/lahman-mysql-dump.sql'
-        self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.pw}@{self.host}/{self.database}',pool_recycle=3600)
-        self.connection = self.engine.connect()
-        self.connection_status = None
         self.command = """mysql -u %s -p %s --host 'localhost' --port 3306 < %s""" %(self.user, self.pw, self.sql_path)
         system(self.command)
         print('SQL database has been created.')
+        self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.pw}@{self.host}/{self.database}',pool_recycle=3600)
+        self.connection = self.engine.connect()
+        self.connection_status = None
 
     def statistical_analysis(self, query, file_name, connection_status):
         d = Path().resolve().parent
@@ -90,10 +90,13 @@ if __name__ == '__main__':
         )
         SELECT
             p.*,
+            people.throws,
             ROUND(whip,2) whip,
             ROUND(fip,2) fip
         FROM 
             pitching p 
+        JOIN 
+            people ON people.playerID = p.playerID
         JOIN 
             salaries s ON s.playerID = p.playerID AND s.yearID = p.yearID AND s.teamID = p.teamID
         JOIN 
